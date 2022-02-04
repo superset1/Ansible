@@ -1,0 +1,15 @@
+---
+# tasks file for testrole
+- name: Delete directory
+  shell: rm -rf /home/ubuntu/test*
+
+
+#  file:
+#    path: /home/ubuntu/{{ item }}
+#    state: absent
+#  loop:
+#    - "test1"
+#    - "test2"
+#    - "test3"
+#    - "test4"
+#    - "test5"

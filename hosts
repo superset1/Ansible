@@ -1,0 +1,17 @@
+linux4 ansible_host=10.10.20.14
+
+[staging_servers]
+linux1 ansible_host=10.10.20.11
+linux2 ansible_host=10.10.20.12
+
+[prod_servers]
+linux3 ansible_host=10.10.20.13
+
+[all_linux:children]
+staging_servers
+prod_servers
+ungrouped
+
+[all_windows]
+windows2012 ansible_host=10.10.10.1 ansible_user=vitaly
+windows10 ansible_host=10.10.10.101 ansible_user=artem

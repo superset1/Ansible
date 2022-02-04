@@ -1,0 +1,6 @@
+---
+# vars file for testrole
+destin_folder: /var/www/html/
+newdir1: /home/ubuntu/test1/
+newdir2: /home/ubuntu/test2/
+newdir3: /home/ubuntu/test3/

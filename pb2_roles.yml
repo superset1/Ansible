@@ -1,0 +1,15 @@
+---
+- name: Linux servers
+  hosts: all_linux
+  become: yes
+
+  roles:
+    - testrole
+
+#  tasks: 
+#  - include_role:
+#      name: testrole
+#      tasks_from: "{{ item }}"
+#    with_items:
+#    - addfile
+#    - delfile

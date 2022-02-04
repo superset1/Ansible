@@ -1,0 +1,55 @@
+---
+- name: Reachable
+  hosts: 
+    - linux1
+    - linux2
+    - linux3
+  become: yes
+#  strategy: free
+  ignore_errors: true
+  ignore_unreachable: yes
+  any_errors_fatal: false
+ 
+  serial: 1
+
+  vars:
+    pkg: iperf3
+ 
+  tasks:
+  - name: ping
+    ping:
+    register: result
+
+#  - debug: var=result.unreachable
+
+  - name: Log about unreachable servers
+    connection: local
+    shell: echo "Host {{ inventary_host }} with ip {{ ansible_default_ipv4.address }} is unreachable" >> unreachable.log
+    when: sshcheck.unreachable == 'true'
+
+  - name: Gather the package facts
+    package_facts:
+      manager: auto
+
+  - name: Install iperf if it's absent
+    apt:
+      name: "{{ pkg }}"
+      state: present
+      update_cache: yes      
+    when: "'pkg' not in ansible_facts.packages"
+
+  - name: Start iperf3 server on a remote host
+    shell: "{{ pkg }} -s -1 "
+    async: 60
+    poll: 0
+
+  - name: Start iperf3 client and test connection
+    connection: local
+    command: "{{ pkg }} -c {{ ansible_default_ipv4.address }} --logfile iperf_result.log"
+#| sed -n -e 1p -e 15,17p -e 19p"
+# >> iperf3.log"
+    register: result
+    failed_when: '"unable to connect to server" in result.stdout'
+
+#  - debug: var=result
+

@@ -1,0 +1,45 @@
+---
+# tasks file for testrole
+- name: Generate index.html
+  template: src=index.j2 dest={{ destin_folder }}/index.html mode=0555
+  notify: Restart Apache
+
+- name: Create directory
+  file:
+   path: "{{ item }}"
+   state: directory
+  with_items:  
+   - "{{ newdir1 }}"
+   - "{{ newdir3 }}"
+
+- name: Generate new file with some content
+  copy:
+    dest: "{{ newdir1 }}/myfile.txt"
+    content: |
+      111
+      222
+      333
+    mode: 0777
+    owner: ubuntu
+    group: ubuntu
+
+- name: Copy all files in folder
+  copy: src={{ item }} dest={{ newdir2 }} mode=0644
+  with_fileglob: "*"
+
+# Create empty files containing the hostname in the name
+- block:
+  - file:
+      dest: "{{ newdir3 }}/file_{{ ansible_hostname }}"
+      state: touch
+    when: ansible_hostname == "c1"
+
+  - file:
+      dest: "{{ newdir3 }}/file_{{ ansible_hostname }}"
+      state: touch  
+    when: ansible_hostname == "c2"
+
+  - file:
+      dest: "{{ newdir3 }}/file_{{ ansible_hostname }}"
+      state: touch  
+    when: ansible_hostname == "c3"

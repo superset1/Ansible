@@ -1,0 +1,101 @@
+- name: Linux servers
+  hosts: all_linux
+  become: yes
+
+  vars:
+    source_file: ./files/index.j2
+    destin_file: /var/www/html/
+    source_folder: ./files
+    destin_folder: /home/ubuntu/test1/
+
+    message1: Privet
+    message2: Bye
+
+  tasks:
+  - name: ping my servers
+    ping:
+
+  - name: istall pakages
+    apt:
+      name:
+      - mc
+      - apache2
+      - git
+#      update_cache: yes
+      state: latest
+
+  - name: start and enable apache
+    service: name=apache2 state=started enabled=yes 
+
+###  
+  - name: Generate index.html
+    template: src={{ source_file }} dest={{ destin_file }}/index.html mode=0555
+    notify: Restart Apache
+
+  - name: copy some files in folder
+    copy: src={{ source_folder }}/{{ item }} dest={{ destin_folder }} mode=0555
+    loop:
+      - "file1.txt"
+      - "file4.txt"
+
+  - name: copy all files in folder
+    copy: src={{ item }} dest=/home/ubuntu/test2/ mode=0644
+    with_fileglob: "{{ source_folder }}/*.txt"
+ 
+###
+  - set_fact: message3="{{ message1 }} {{ owner }} and {{ message2 }}"
+
+  - shell: uptime
+    register: results
+
+  - block: # for linux1
+    - name: Print variables
+      debug:
+        msg: 
+        - "Test message: {{ message1 }}"
+        - "{{ message3 }}"
+        - "{{ ansible_hostname }}"
+        - "{{ results.start }}"
+#      debug: var=message3
+
+    - name: Loop
+      debug: msg="Hello {{ item }}"
+      loop:
+        - "Ivan"
+        - "Sergey"
+        - "Andrey"
+
+    - name: Delete files
+#      shell: rm -rf /home/ubuntu/test*
+      file: 
+        state: absent
+        path: /home/ubuntu/test.txt
+
+    - name: Until
+      shell: echo -n "1" >> test.txt && cat test.txt
+      register: result
+      until: result.stdout == "111"
+#      until: result.stdout.find("1111") == false
+      retries: 5
+      delay: 1
+
+    - name: mmmmm
+      debug: var=result
+
+    when: ansible_hostname == "c1"
+
+
+  handlers:
+  - name: Restart Apache
+    service: name=apache2 state=restarted
+
+
+
+
+##########
+- name: Windows servers
+  hosts: all_windows
+
+  tasks:
+  - name: ping my servers
+    win_ping:

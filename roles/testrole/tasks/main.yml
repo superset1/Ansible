@@ -1,0 +1,28 @@
+---
+# tasks file for testrole
+- name: special mistake
+  apt: name=myfakeapt state=latest
+  async: 10
+  poll: 0
+#  ignore_errors: yes  
+  
+- name: Include additional tasks
+  include_tasks: "{{ outer_item }}"
+  loop:
+    - addfile.yml
+    - delfile.yml
+  loop_control:
+    loop_var: outer_item
+#    extended: yes
+
+- name: wait for wake up web servers
+  wait_for:
+    port: 80
+    timeout: 15
+#  register: result
+#  failed_when: "'started' in result.state"
+#- debug: var=result
+
+- name: reboot all servers
+  reboot:
+    reboot_timeout: 40
