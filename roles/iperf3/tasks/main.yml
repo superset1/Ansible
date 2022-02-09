@@ -1,0 +1,15 @@
+---
+# Update host list and create new ansible host_inventory group
+
+- name: Insert unique host list from hostlist to iperf3 table
+  shell: mysql -u"{{ dbuser }}" -p"{{ dbpassword }}" -D "{{ dbname }}" -h "{{ dbhost }}" -e "INSERT IGNORE INTO iperf3 (host_name) SELECT host_name FROM hostlist;"
+
+- name: Getting a list of hosts from iperf3 table
+  shell: mysql -u"{{ dbuser }}" -p"{{ dbpassword }}" -D "{{ dbname }}" -h "{{ dbhost }}" -e "SELECT host_name FROM iperf3;" -B --skip-column-names
+  register: resultsql
+  
+- name: Add hosts from sql table hostlist to new ansible hostlist_group
+  add_host:
+    name: "{{ item }}"
+    groups: hostlist_group
+  with_items: "{{ resultsql.stdout_lines }}"

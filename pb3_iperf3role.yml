@@ -1,0 +1,27 @@
+---
+- name: Getting info from MySQL
+  hosts: localhost
+  gather_facts: no
+
+  roles:
+    - iperf3 # Getting host list from MySQL and adding them to the hostlist_group
+
+- name: Test channel from hostlist_group
+  hosts: hostlist_group
+  become: yes
+  gather_facts: no
+
+  tasks: 
+
+  - include_role:
+      name: iperf3
+      tasks_from: ping
+
+  - include_role:
+      name: iperf3
+      tasks_from: apt_install
+
+  - include_role:
+      name: iperf3
+      tasks_from: testchannel
+      #throttle: 1

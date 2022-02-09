@@ -1,0 +1,38 @@
+---
+# Ping all servers
+
+- set_fact: nowdate="{{lookup('pipe','date +%s')}}" # Var for current date
+
+- name: Compare last check time
+  connection: local
+  shell: mysql -u"{{ dbuser }}" -p"{{ dbpassword }}" -D "{{ dbname }}" -h "{{ dbhost }}" -e "SELECT date_system FROM iperf3 WHERE host_name='{{ ansible_host }}';" -B --skip-column-names # Getting the last access timestamp
+  register: lastdate_result
+
+- set_fact: lastdate_var="{{ item | int }}"
+  with_items: "{{ lastdate_result.stdout_lines }}"
+
+#----------------------------------------------
+- block:
+
+  - name: Test connection
+    ping:
+    ignore_unreachable: yes
+    register: pingtest
+  
+  - name: Access date and time update in iperf3 table
+    connection: local
+    shell: mysql -u"{{ dbuser }}" -p"{{ dbpassword }}" -D "{{ dbname }}" -h "{{ dbhost }}" -e "UPDATE iperf3 SET date_check=NOW() WHERE host_name='{{ ansible_host }}';"
+    
+  - name: Log about unreachable servers to file and MySQL
+    connection: local
+    shell: |
+      echo "{{lookup('pipe','date +%Y-%m-%d_%H-%M-%S')}} Host {{ inventory_hostname }} with ip {{ ansible_host }} is unreachable" >> unreachable.log
+      mysql -u"{{ dbuser }}" -p"{{ dbpassword }}" -D "{{ dbname }}" -h "{{ dbhost }}" -e "UPDATE iperf3 SET status='NOT Available' WHERE host_name='{{ ansible_host }}';"
+    when: pingtest.unreachable is defined
+  
+  - name: Insert status available to MySQL
+    connection: local
+    shell: mysql -u"{{ dbuser }}" -p"{{ dbpassword }}" -D "{{ dbname }}" -h "{{ dbhost }}" -e "UPDATE iperf3 SET status='Available' WHERE host_name='{{ ansible_host }}';"
+    when: pingtest.unreachable is undefined 
+  when: '{{ nowdate }} - {{ lastdate_var }} > {{ t }}'
+#----------------------------------------------

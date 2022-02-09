@@ -1,0 +1,24 @@
+---
+- name: Che tak mnogo bukv????
+  hosts: 
+    - linux3
+  become: yes
+ 
+  tasks:
+
+  - name: Ansible delete file glob
+    find:
+      paths: /home/ubuntu/111/
+      patterns: "*.txt"
+    register: files_to_delete
+
+  - name: Ansible remove file glob
+    file:
+      path: "{{ item.path }}"
+      state: absent
+    with_items: "{{ files_to_delete.files }}"
+
+
+# --- Аналог ---
+  # - name: Delete directory
+  #   shell: rm -rf /home/ubuntu/111/*.txt warn=false

@@ -10,7 +10,7 @@ linux3 ansible_host=10.10.20.13
 [all_linux:children]
 staging_servers
 prod_servers
-ungrouped
+
 
 [all_windows]
 windows2012 ansible_host=10.10.10.1 ansible_user=vitaly

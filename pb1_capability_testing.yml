@@ -7,6 +7,9 @@
     destin_file: /var/www/html/
     source_folder: ./files
     destin_folder: /home/ubuntu/test1/
+  
+#  vars_files:
+#    - "vars/common.yml"
 
     message1: Privet
     message2: Bye
@@ -47,6 +50,11 @@
 
   - shell: uptime
     register: results
+
+  - name: Access date and time update in iperf3 table
+    connection: local # Only this syntax works with local database (not delegate_to, not local_action)
+    shell: mysql -u"vitaly" -p"123" -D "testhosts" -h "localhost" -e "UPDATE iperf3 SET date_check=NOW() WHERE host_name='{{ ansible_host }}';"  
+
 
   - block: # for linux1
     - name: Print variables
@@ -99,3 +107,8 @@
   tasks:
   - name: ping my servers
     win_ping:
+
+  - meta: end_play
+
+  - name: this task not runs because meta=end_play
+    debug: msg="Not run"

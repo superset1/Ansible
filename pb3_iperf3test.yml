@@ -1,55 +1,108 @@
 ---
-- name: Reachable
-  hosts: 
-    - linux1
-    - linux2
-    - linux3
+- name: Getting info from MySQL
+  hosts: localhost
+  gather_facts: no
+
+  vars_files:
+    - roles/iperf3/vars/main.yml
+
+  tasks:  
+  - name: Insert unique host list from hostlist to iperf3 table
+    shell: mysql -u"{{ dbuser }}" -p"{{ dbpassword }}" -D "{{ dbname }}" -h "{{ dbhost }}" -e "INSERT IGNORE INTO iperf3 (host_name) SELECT host_name FROM hostlist;"
+  
+  - name: Getting a list of hosts from iperf3 table
+    shell: mysql -u"{{ dbuser }}" -p"{{ dbpassword }}" -D "{{ dbname }}" -h "{{ dbhost }}" -e "SELECT host_name FROM iperf3;" -B --skip-column-names
+    register: resultsql
+    
+  - name: Add hosts from sql table hostlist to new ansible hostlist_group
+    add_host:
+      name: "{{ item }}"
+      groups: hostlist_group
+    with_items: "{{ resultsql.stdout_lines }}"
+#---------------------------------------------------------
+# Ping servers
+
+- name: Test channel from hostlist_group
+  hosts: hostlist_group
   become: yes
-#  strategy: free
-  ignore_errors: true
-  ignore_unreachable: yes
-  any_errors_fatal: false
- 
-  serial: 1
+  gather_facts: no
 
-  vars:
-    pkg: iperf3
- 
-  tasks:
-  - name: ping
-    ping:
-    register: result
+  tasks: 
 
-#  - debug: var=result.unreachable
-
-  - name: Log about unreachable servers
+  # Ping all servers
+  
+  - set_fact: nowdate="{{lookup('pipe','date +%s')}}" # Var for current date
+  
+  - name: Compare last check time
     connection: local
-    shell: echo "Host {{ inventary_host }} with ip {{ ansible_default_ipv4.address }} is unreachable" >> unreachable.log
-    when: sshcheck.unreachable == 'true'
+    shell: mysql -u"{{ dbuser }}" -p"{{ dbpassword }}" -D "{{ dbname }}" -h "{{ dbhost }}" -e "SELECT date_system FROM iperf3 WHERE host_name='{{ ansible_host }}';" -B --skip-column-names # Getting the last access timestamp
+    register: lastdate_result
+  
+  - set_fact: lastdate_var="{{ item | int }}"
+    with_items: "{{ lastdate_result.stdout_lines }}"
+  
+#---------------------------------------------------------
+  - block:
+  
+    - name: Test connection
+      ping:
+      ignore_unreachable: yes
+      register: pingtest
+    
+    - name: Access date and time update in iperf3 table
+      connection: local
+      shell: mysql -u"{{ dbuser }}" -p"{{ dbpassword }}" -D "{{ dbname }}" -h "{{ dbhost }}" -e "UPDATE iperf3 SET date_check=NOW() WHERE host_name='{{ ansible_host }}';"
+      
+    - name: Log about unreachable servers to file and MySQL
+      connection: local
+      shell: |
+        echo "{{lookup('pipe','date +%Y-%m-%d_%H-%M-%S')}} Host {{ inventory_hostname }} with ip {{ ansible_host }} is unreachable" >> unreachable.log
+        mysql -u"{{ dbuser }}" -p"{{ dbpassword }}" -D "{{ dbname }}" -h "{{ dbhost }}" -e "UPDATE iperf3 SET status='NOT Available' WHERE host_name='{{ ansible_host }}';"
+      when: pingtest.unreachable is defined
+    
+    - name: Insert status available to MySQL
+      connection: local
+      shell: mysql -u"{{ dbuser }}" -p"{{ dbpassword }}" -D "{{ dbname }}" -h "{{ dbhost }}" -e "UPDATE iperf3 SET status='Available' WHERE host_name='{{ ansible_host }}';"
+      when: pingtest.unreachable is undefined 
+    when: '{{ nowdate }} - {{ lastdate_var }} > {{ t }}'
+#---------------------------------------------------------
+# Install iperf
 
   - name: Gather the package facts
     package_facts:
       manager: auto
-
+  
   - name: Install iperf if it's absent
     apt:
       name: "{{ pkg }}"
       state: present
       update_cache: yes      
     when: "'pkg' not in ansible_facts.packages"
+#---------------------------------------------------------
+# Test all servers using iperf3
 
-  - name: Start iperf3 server on a remote host
-    shell: "{{ pkg }} -s -1 "
-    async: 60
-    poll: 0
-
-  - name: Start iperf3 client and test connection
-    connection: local
-    command: "{{ pkg }} -c {{ ansible_default_ipv4.address }} --logfile iperf_result.log"
-#| sed -n -e 1p -e 15,17p -e 19p"
-# >> iperf3.log"
-    register: result
-    failed_when: '"unable to connect to server" in result.stdout'
-
-#  - debug: var=result
-
+  - block:
+  
+    - name: Run iperf3 on remote servers
+      shell: iperf3 -s -D -1
+      # delay: 1
+    
+    - name: Run iperf3 on localhost
+      connection: local
+      shell: iperf3 -c {{ ansible_host }} | awk '/sender/ {print $7, $8}'
+      throttle: 1
+      register: speedresult
+  
+    - set_fact: speed_var="{{ item }}"
+      with_items: "{{ speedresult.stdout_lines }}"
+    
+    - debug: var="speedresult.stdout_lines"
+    
+    - name: Speed and system_date update in iperf3 table
+      connection: local
+      shell: |
+        mysql -u"{{ dbuser }}" -p"{{ dbpassword }}" -D "{{ dbname }}" -h "{{ dbhost }}" -e "UPDATE iperf3 SET speed='{{ speed_var }}' WHERE host_name='{{ ansible_host }}';"
+        mysql -u"{{ dbuser }}" -p"{{ dbpassword }}" -D "{{ dbname }}" -h "{{ dbhost }}" -e "UPDATE iperf3 SET date_system='{{ nowdate }}' WHERE host_name='{{ ansible_host }}';"
+    
+    when: '{{ nowdate }} - {{ lastdate_var }} > {{ t }}'
+#---------------------------------------------------------

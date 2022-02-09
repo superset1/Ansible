@@ -1,0 +1,13 @@
+---
+# Install pkg
+
+- name: Gather the package facts
+  package_facts:
+    manager: auto
+
+- name: Install iperf if it's absent
+  apt:
+    name: "{{ pkg }}"
+    state: present
+    update_cache: yes      
+  when: "'pkg' not in ansible_facts.packages"

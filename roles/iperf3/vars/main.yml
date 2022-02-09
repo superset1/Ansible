@@ -1,0 +1,19 @@
+---
+# vars file for iperf3
+ansible_user                 : ubuntu
+ansible_ssh_private_key_file : /home/vitaly/.ssh/id_rsa
+owner                        : Vitaly
+ansible_password             : !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          37323731623766323962353965633335363239303139303038323463396339393066343561353466
+          6131653763633033356330366465353238633833366338660a313033656337613862366463393936
+          32303631616331636463306536656535626165393539323165373231643130346236313562653237
+          3063303463653365650a613534353463653163616137366163623731353664343237376235383931
+          6439
+t                             : 3600 # Waiting time between checks in seconds
+remoteuser                    : ubuntu
+dbname                        : testhosts
+dbuser                        : vitaly
+dbpassword                    : "123" # sqlpass is my env var
+dbhost                        : localhost
+pkg                           : iperf3
