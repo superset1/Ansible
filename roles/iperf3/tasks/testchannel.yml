@@ -16,8 +16,6 @@
   - set_fact: speed_var="{{ item }}"
     with_items: "{{ speedresult.stdout_lines }}"
   
-  - debug: var="speedresult.stdout_lines"
-  
   - name: Speed and system_date update in iperf3 table
     connection: local
     shell: |
@@ -25,4 +23,4 @@
       mysql -u"{{ dbuser }}" -p"{{ dbpassword }}" -D "{{ dbname }}" -h "{{ dbhost }}" -e "UPDATE iperf3 SET date_system='{{ nowdate }}' WHERE host_name='{{ ansible_host }}';"
   
   when: '{{ nowdate }} - {{ lastdate_var }} > {{ t }}'
-#----------------------------------------------
+#------------------------------------------------------

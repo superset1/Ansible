@@ -20,12 +20,14 @@
       groups: hostlist_group
     with_items: "{{ resultsql.stdout_lines }}"
 #---------------------------------------------------------
-# Ping servers
 
 - name: Test channel from hostlist_group
   hosts: hostlist_group
   become: yes
   gather_facts: no
+
+  vars_files:
+    - roles/iperf3/vars/main.yml
 
   tasks: 
 
@@ -56,8 +58,9 @@
     - name: Log about unreachable servers to file and MySQL
       connection: local
       shell: |
-        echo "{{lookup('pipe','date +%Y-%m-%d_%H-%M-%S')}} Host {{ inventory_hostname }} with ip {{ ansible_host }} is unreachable" >> unreachable.log
+        echo "{{lookup('pipe','date +%Y-%m-%d_%H-%M-%S')}} Host {{ inventory_hostname }} is unreachable" >> unreachable.log
         mysql -u"{{ dbuser }}" -p"{{ dbpassword }}" -D "{{ dbname }}" -h "{{ dbhost }}" -e "UPDATE iperf3 SET status='NOT Available' WHERE host_name='{{ ansible_host }}';"
+        mysql -u"{{ dbuser }}" -p"{{ dbpassword }}" -D "{{ dbname }}" -h "{{ dbhost }}" -e "INSERT INTO unavailable_log SET host_name='{{ ansible_host }}';"
       when: pingtest.unreachable is defined
     
     - name: Insert status available to MySQL
@@ -95,9 +98,7 @@
   
     - set_fact: speed_var="{{ item }}"
       with_items: "{{ speedresult.stdout_lines }}"
-    
-    - debug: var="speedresult.stdout_lines"
-    
+        
     - name: Speed and system_date update in iperf3 table
       connection: local
       shell: |

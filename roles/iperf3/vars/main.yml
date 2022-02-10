@@ -13,7 +13,7 @@ ansible_password             : !vault |
 t                             : 3600 # Waiting time between checks in seconds
 remoteuser                    : ubuntu
 dbname                        : testhosts
-dbuser                        : vitaly
+dbuser                        : "vitaly"
 dbpassword                    : "123" # sqlpass is my env var
 dbhost                        : localhost
 pkg                           : iperf3

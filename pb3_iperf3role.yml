@@ -20,8 +20,9 @@
   - include_role:
       name: iperf3
       tasks_from: apt_install
+    when: pingtest.unreachable is undefined   
 
   - include_role:
       name: iperf3
       tasks_from: testchannel
-      #throttle: 1
+    when: pingtest.unreachable is undefined 
