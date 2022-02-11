@@ -25,4 +25,4 @@
   - include_role:
       name: iperf3
       tasks_from: testchannel
-    when: pingtest.unreachable is undefined 
+    when: pingtest.unreachable is undefined

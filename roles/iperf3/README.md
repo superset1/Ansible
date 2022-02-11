@@ -1,38 +1,43 @@
-Role Name
+Iperf3
 =========
 
-A brief description of the role goes here.
+This role checks the availability of hosts and measures the speed to them. The role takes the list of hosts from the "hostlist" table in the mysql database, then inserts the results into new tables "iperf3" and "unavailable_log". It also creates a log file called unreachable.log with a list of unreachable hosts.
 
 Requirements
 ------------
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
+1. You should create tables in MySQL (take my SQL script here: https://github.com/superset1/SQL/blob/master/MySQL_Create_db_hosts_for_iperf3.sql)
+2. You need to change the values of the variables in /vars/main.yml file
+3. Copy the /tests/test.yml file to the folder where you have a folder named "roles"
+4. Write the following command on the command line: 
+   ansible-playbook test.yml
+5. Congratulations you did it!
+
+NOTE:  You can rename test.yml file as you like 
+
 
 Role Variables
 --------------
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+See description for variables in /vars/main.yml file
+
 
 Dependencies
 ------------
 
-A list of other roles hosted on Galaxy should go here, plus any details in regards to parameters that may need to be set for other roles, or variables that are used from other roles.
+Don't need anything
 
 Example Playbook
 ----------------
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
-
-    - hosts: servers
-      roles:
-         - { role: username.rolename, x: 42 }
+See the finished Playbook in folder tests
 
 License
 -------
 
-BSD
+MIT
 
 Author Information
 ------------------
 
-An optional section for the role authors to include contact information, or a website (HTML is not allowed).
+Hello, I'm Vitaly Kargin and I'm on my way to becoming a devops engineer!

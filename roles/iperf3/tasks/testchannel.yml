@@ -22,5 +22,5 @@
       mysql -u"{{ dbuser }}" -p"{{ dbpassword }}" -D "{{ dbname }}" -h "{{ dbhost }}" -e "UPDATE iperf3 SET speed='{{ speed_var }}' WHERE host_name='{{ ansible_host }}';"
       mysql -u"{{ dbuser }}" -p"{{ dbpassword }}" -D "{{ dbname }}" -h "{{ dbhost }}" -e "UPDATE iperf3 SET date_system='{{ nowdate }}' WHERE host_name='{{ ansible_host }}';"
   
-  when: '{{ nowdate }} - {{ lastdate_var }} > {{ t }}'
+  when: '{{ nowdate }} - {{ lastdate_var }} > {{ timer }}'
 #------------------------------------------------------

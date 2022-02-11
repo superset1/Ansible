@@ -1,15 +1,16 @@
 ---
 # tasks file for testrole
-- name: Delete directory
-  shell: rm -rf /home/ubuntu/test*
+- name: Ansible delete file glob
+  find:
+    paths: /home/ubuntu/test/
+    patterns: "*test*"
+  register: files_to_delete
 
+- name: Ansible remove file glob
+  file:
+    path: "{{ item.path }}"
+    state: absent
+  with_items: "{{ files_to_delete.files }}"
 
-#  file:
-#    path: /home/ubuntu/{{ item }}
-#    state: absent
-#  loop:
-#    - "test1"
-#    - "test2"
-#    - "test3"
-#    - "test4"
-#    - "test5"
+# - name: Delete directory
+#   shell: rm -rf /home/ubuntu/test*
