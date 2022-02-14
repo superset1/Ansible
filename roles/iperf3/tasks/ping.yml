@@ -26,7 +26,7 @@
   - name: Log about unreachable servers to file and MySQL
     connection: local
     shell: |
-      echo "{{lookup('pipe','date +%Y-%m-%d_%H-%M-%S')}} Host {{ inventory_hostname }} is unreachable" >> unreachable.log
+      echo "$(date +%Y-%m-%d_%H-%M-%S) Host {{ inventory_hostname }} is unreachable" >> unreachable.log
       mysql -u"{{ dbuser }}" -p"{{ dbpassword }}" -D "{{ dbname }}" -h "{{ dbhost }}" -e "UPDATE iperf3 SET status='NOT Available' WHERE host_name='{{ ansible_host }}';"
       mysql -u"{{ dbuser }}" -p"{{ dbpassword }}" -D "{{ dbname }}" -h "{{ dbhost }}" -e "INSERT INTO unavailable_log SET host_name='{{ ansible_host }}';"
     when: pingtest.unreachable is defined

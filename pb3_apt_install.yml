@@ -1,0 +1,23 @@
+---
+- name: Install apt in lxc containers
+  hosts: all_linux
+  gather_facts: no
+  become: yes
+  
+  vars:
+    pkg:
+      - openjdk-11-jre-headless
+      - mysql-client
+
+  tasks:
+  - name: Gather the package facts
+    package_facts:
+      manager: auto
+
+  - name: Install packages if missing
+    apt:
+      name: "{{ pkg }}"
+      state: present
+      update_cache: yes
+    when: item not in ansible_facts.packages
+    with_items: "{{ pkg }}"

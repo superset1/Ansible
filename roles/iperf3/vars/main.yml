@@ -11,4 +11,4 @@ dbname: testhosts # Write your database name
 dbuser: "vitaly" # Write your database user name
 dbpassword: "123" # Write your database password
 dbhost: localhost # Write your MySQL server host
-pkg: iperf3 # Package name
+pkg: iperf3 # Package name (You can write a list of packages here)

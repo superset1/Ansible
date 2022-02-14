@@ -58,7 +58,7 @@
     - name: Log about unreachable servers to file and MySQL
       connection: local
       shell: |
-        echo "{{lookup('pipe','date +%Y-%m-%d_%H-%M-%S')}} Host {{ inventory_hostname }} is unreachable" >> unreachable.log
+        echo "$(date +%Y-%m-%d_%H-%M-%S) Host {{ inventory_hostname }} is unreachable" >> unreachable.log
         mysql -u"{{ dbuser }}" -p"{{ dbpassword }}" -D "{{ dbname }}" -h "{{ dbhost }}" -e "UPDATE iperf3 SET status='NOT Available' WHERE host_name='{{ ansible_host }}';"
         mysql -u"{{ dbuser }}" -p"{{ dbpassword }}" -D "{{ dbname }}" -h "{{ dbhost }}" -e "INSERT INTO unavailable_log SET host_name='{{ ansible_host }}';"
       when: pingtest.unreachable is defined
@@ -79,8 +79,9 @@
     apt:
       name: "{{ pkg }}"
       state: present
-      update_cache: yes      
-    when: "'pkg' not in ansible_facts.packages"
+      update_cache: yes
+    when: item not in ansible_facts.packages
+    with_items: "{{ pkg }}"
 #---------------------------------------------------------
 # Test all servers using iperf3
 

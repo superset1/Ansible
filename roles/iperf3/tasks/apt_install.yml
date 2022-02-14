@@ -9,5 +9,6 @@
   apt:
     name: "{{ pkg }}"
     state: present
-    update_cache: yes      
-  when: "'pkg' not in ansible_facts.packages"
+    update_cache: yes
+  when: item not in ansible_facts.packages
+  with_items: "{{ pkg }}"
