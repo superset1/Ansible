@@ -5,7 +5,6 @@
 
   - name: Run iperf3 on remote servers
     shell: iperf3 -s -D -1
-    # delay: 1
   
   - name: Run iperf3 on localhost
     connection: local
@@ -13,14 +12,11 @@
     throttle: 1
     register: speedresult
 
-  - set_fact: speed_var="{{ item }}"
-    with_items: "{{ speedresult.stdout_lines }}"
-  
   - name: Speed and system_date update in iperf3 table
     connection: local
     shell: |
-      mysql -u"{{ dbuser }}" -p"{{ dbpassword }}" -D "{{ dbname }}" -h "{{ dbhost }}" -e "UPDATE iperf3 SET speed='{{ speed_var }}' WHERE host_name='{{ ansible_host }}';"
+      mysql -u"{{ dbuser }}" -p"{{ dbpassword }}" -D "{{ dbname }}" -h "{{ dbhost }}" -e "UPDATE iperf3 SET speed='{{ speedresult.stdout }}' WHERE host_name='{{ ansible_host }}';"
       mysql -u"{{ dbuser }}" -p"{{ dbpassword }}" -D "{{ dbname }}" -h "{{ dbhost }}" -e "UPDATE iperf3 SET date_system='{{ nowdate }}' WHERE host_name='{{ ansible_host }}';"
   
-  when: '{{ nowdate }} - {{ lastdate_var }} > {{ timer }}'
+  when: diff_date|int > timer
 #------------------------------------------------------

@@ -34,15 +34,16 @@
   # Ping all servers
   
   - set_fact: nowdate="{{lookup('pipe','date +%s')}}" # Var for current date
+    connection: local
+    run_once: true
   
-  - name: Compare last check time
+  - name: Get last time checking
     connection: local
     shell: mysql -u"{{ dbuser }}" -p"{{ dbpassword }}" -D "{{ dbname }}" -h "{{ dbhost }}" -e "SELECT date_system FROM iperf3 WHERE host_name='{{ ansible_host }}';" -B --skip-column-names # Getting the last access timestamp
     register: lastdate_result
   
-  - set_fact: lastdate_var="{{ item | int }}"
-    with_items: "{{ lastdate_result.stdout_lines }}"
-  
+  - set_fact: diff_date="{{ nowdate|int - lastdate_result.stdout|int }}"
+
 #---------------------------------------------------------
   - block:
   
@@ -67,29 +68,25 @@
       connection: local
       shell: mysql -u"{{ dbuser }}" -p"{{ dbpassword }}" -D "{{ dbname }}" -h "{{ dbhost }}" -e "UPDATE iperf3 SET status='Available' WHERE host_name='{{ ansible_host }}';"
       when: pingtest.unreachable is undefined 
-    when: '{{ nowdate }} - {{ lastdate_var }} > {{ timer }}'
 #---------------------------------------------------------
 # Install iperf
 
-  - name: Gather the package facts
-    package_facts:
-      manager: auto
-  
-  - name: Install iperf if it's absent
-    apt:
-      name: "{{ pkg }}"
-      state: present
-      update_cache: yes
-    when: item not in ansible_facts.packages
-    with_items: "{{ pkg }}"
+    - name: Gather the package facts
+      package_facts:
+        manager: auto
+    
+    - name: Install iperf if it's absent
+      apt:
+        name: "{{ pkg }}"
+        state: present
+        update_cache: yes
+      when: item not in ansible_facts.packages
+      with_items: "{{ pkg }}"
 #---------------------------------------------------------
 # Test all servers using iperf3
 
-  - block:
-  
     - name: Run iperf3 on remote servers
       shell: iperf3 -s -D -1
-      # delay: 1
     
     - name: Run iperf3 on localhost
       connection: local
@@ -97,14 +94,11 @@
       throttle: 1
       register: speedresult
   
-    - set_fact: speed_var="{{ item }}"
-      with_items: "{{ speedresult.stdout_lines }}"
-        
     - name: Speed and system_date update in iperf3 table
       connection: local
       shell: |
-        mysql -u"{{ dbuser }}" -p"{{ dbpassword }}" -D "{{ dbname }}" -h "{{ dbhost }}" -e "UPDATE iperf3 SET speed='{{ speed_var }}' WHERE host_name='{{ ansible_host }}';"
+        mysql -u"{{ dbuser }}" -p"{{ dbpassword }}" -D "{{ dbname }}" -h "{{ dbhost }}" -e "UPDATE iperf3 SET speed='{{ speedresult.stdout }}' WHERE host_name='{{ ansible_host }}';"
         mysql -u"{{ dbuser }}" -p"{{ dbpassword }}" -D "{{ dbname }}" -h "{{ dbhost }}" -e "UPDATE iperf3 SET date_system='{{ nowdate }}' WHERE host_name='{{ ansible_host }}';"
     
-    when: '{{ nowdate }} - {{ lastdate_var }} > {{ timer }}'
+    when: diff_date|int > timer
 #---------------------------------------------------------

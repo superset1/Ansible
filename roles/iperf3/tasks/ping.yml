@@ -2,14 +2,15 @@
 # Ping all servers
 
 - set_fact: nowdate="{{lookup('pipe','date +%s')}}" # Var for current date
+  connection: local
+  run_once: true
 
-- name: Compare last check time
+- name: Get last time checking
   connection: local
   shell: mysql -u"{{ dbuser }}" -p"{{ dbpassword }}" -D "{{ dbname }}" -h "{{ dbhost }}" -e "SELECT date_system FROM iperf3 WHERE host_name='{{ ansible_host }}';" -B --skip-column-names # Getting the last access timestamp
   register: lastdate_result
 
-- set_fact: lastdate_var="{{ item | int }}"
-  with_items: "{{ lastdate_result.stdout_lines }}"
+- set_fact: diff_date="{{ nowdate|int - lastdate_result.stdout|int }}"
 
 #------------------------------------------------------
 - block:
@@ -35,5 +36,5 @@
     connection: local
     shell: mysql -u"{{ dbuser }}" -p"{{ dbpassword }}" -D "{{ dbname }}" -h "{{ dbhost }}" -e "UPDATE iperf3 SET status='Available' WHERE host_name='{{ ansible_host }}';"
     when: pingtest.unreachable is undefined 
-  when: '{{ nowdate }} - {{ lastdate_var }} > {{ timer }}'
+  when: diff_date|int > timer
 #------------------------------------------------------
