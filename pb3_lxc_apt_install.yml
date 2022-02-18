@@ -1,0 +1,41 @@
+---
+- name: Install apt in lxc containers
+  hosts: localhost
+  gather_facts: no
+  
+  tasks:
+  - name: Getting a list of hosts from lxc ls
+    shell: lxc list -c 4 -f csv | awk '{print $1}'
+    register: iplxc
+    
+  - name: Add hosts from lxc ls to new hostlist_group
+    add_host:
+      name: "{{ item }}"
+      groups: hostlist_group
+    with_items: "{{ iplxc.stdout_lines }}"
+
+- name: Install apt in lxc containers
+  hosts: hostlist_group
+  gather_facts: no
+  become: yes
+  
+  vars:
+    ansible_user: ubuntu
+    ansible_ssh_private_key_file : /home/vitaly/.ssh/id_rsa
+    pkg:
+      - openjdk-11-jre-headless
+      - mysql-client
+      - apache2
+
+  tasks:
+  - name: Gather the package facts
+    package_facts:
+      manager: auto
+
+  - name: Install packages if missing
+    apt:
+      name: "{{ pkg }}"
+      state: present
+      update_cache: yes
+    when: item not in ansible_facts.packages
+    with_items: "{{ pkg }}"
